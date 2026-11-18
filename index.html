@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaVision AI | Swimming Vision Classifier & Community Impact</title>
+    
+    <!-- Google Fonts: Fredoka/Plus Jakarta Sans for upbeat aquatic headings & Inter for clean readability -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- TensorFlow.js & Teachable Machine Image Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+    <!-- Tailwind Custom Configuration for Aquatic Pool Palette & Animations -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        aqua: {
+                            50: '#ecfeff',
+                            100: '#cffafe',
+                            200: '#a5f3fc',
+                            300: '#67e8f9',
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490',
+                            800: '#155e75',
+                            900: '#164e63',
+                            950: '#083344',
+                        },
+                        ocean: {
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        sun: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                        },
+                        coral: {
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'float-delayed': 'float 8s ease-in-out 2s infinite',
+                        'wave': 'wave 12s linear infinite',
+                        'ripple': 'ripple 2.5s cubic-bezier(0, 0.2, 0.8, 1) infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-14px)' },
+                        },
+                        wave: {
+                            '0%': { transform: 'translateX(0)' },
+                            '100%': { transform: 'translateX(-50%)' },
+                        },
+                        ripple: {
+                            '0%': { transform: 'scale(0.8)', opacity: '0.8' },
+                            '100%': { transform: 'scale(2.2)', opacity: '0' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Subtle swimming pool caustic water shimmer & lane divider accents */
+        .pool-caustics {
+            background-color: #ecfeff;
+            background-image: 
+                radial-gradient(at 15% 20%, rgba(34, 211, 238, 0.22) 0px, transparent 50%),
+                radial-gradient(at 85% 15%, rgba(2, 132, 199, 0.18) 0px, transparent 50%),
+                radial-gradient(at 50% 80%, rgba(103, 232, 249, 0.25) 0px, transparent 55%);
+        }
+
+        /* Floating lane rope divider bar */
+        .lane-rope {
+            background: repeating-linear-gradient(
+                90deg,
+                #06b6d4 0px,
+                #06b6d4 16px,
+                #ffffff 16px,
+                #ffffff 24px,
+                #f59e0b 24px,
+                #f59e0b 40px,
+                #ffffff 40px,
+                #ffffff 48px
+            );
+        }
+
+        /* Subtle pool tile grid texture for viewport */
+        .pool-tiles {
+            background-image: 
+                linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="bg-cyan-50/40 text-slate-800 antialiased selection:bg-aqua-500 selection:text-white flex flex-col min-h-screen">
+
+    <!-- Top Navigation Bar: Crisp Poolside Header -->
+    <header class="sticky top-0 z-40 w-full backdrop-blur-md bg-white/85 border-b border-aqua-200/80 shadow-sm shadow-aqua-500/5 transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Identity -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-aqua-400 via-aqua-500 to-ocean-600 flex items-center justify-center text-white shadow-md shadow-aqua-500/30">
+                    <!-- Swimmer / Water Wave Icon -->
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15c2.483 0 4.345-1.5 6-1.5s3.517 1.5 6 1.5 4.345-1.5 6-1.5M3 19c2.483 0 4.345-1.5 6-1.5s3.517 1.5 6 1.5 4.345-1.5 6-1.5M15 7a2 2 0 11-4 0 2 2 0 014 0zm-4 4l3-1 3 2" />
+                    </svg>
+                </div>
+                <div>
+                    <span class="font-display font-extrabold text-xl tracking-tight text-aqua-950">AquaVision<span class="text-aqua-600">AI</span></span>
+                    <span class="hidden sm:inline-block ml-2 px-2.5 py-0.5 text-xs font-semibold bg-aqua-100 text-aqua-800 rounded-full border border-aqua-200">Swim Vision Studio</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex items-center space-x-1 sm:space-x-4 text-sm font-semibold text-slate-600">
+                <a href="#classifier" class="px-3.5 py-2 rounded-xl hover:text-aqua-700 hover:bg-aqua-50 transition-colors">Swim Classifier</a>
+                <a href="#community-impact" class="px-3.5 py-2 rounded-xl hover:text-aqua-700 hover:bg-aqua-50 transition-colors">Community Impact</a>
+                <a href="#pool-features" class="hidden md:inline-block px-3.5 py-2 rounded-xl hover:text-aqua-700 hover:bg-aqua-50 transition-colors">How It Works</a>
+            </nav>
+        </div>
+        <!-- Decorative Pool Lane Rope Accent -->
+        <div class="h-1 w-full lane-rope opacity-80"></div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow">
+        
+        <!-- Hero Section: Sunlit Poolside Atmosphere & Animated Waves -->
+        <section class="relative overflow-hidden pt-14 pb-24 sm:pt-20 sm:pb-32 pool-caustics">
+            
+            <!-- Playful Floating Bubbles (Decorative) -->
+            <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+                <div class="absolute top-12 left-[10%] w-8 h-8 rounded-full bg-white/60 border border-aqua-300/60 shadow-inner animate-float"></div>
+                <div class="absolute top-28 left-[18%] w-4 h-4 rounded-full bg-aqua-300/40 animate-float-delayed"></div>
+                <div class="absolute top-16 right-[14%] w-12 h-12 rounded-full bg-white/50 border border-aqua-200/80 animate-float-delayed"></div>
+                <div class="absolute bottom-24 right-[22%] w-6 h-6 rounded-full bg-aqua-400/30 animate-float"></div>
+                <div class="absolute bottom-28 left-[26%] w-5 h-5 rounded-full bg-white/70 border border-aqua-300/50 animate-float-delayed"></div>
+            </div>
+
+            <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
+                <!-- Live Neural Model Pill -->
+                <div class="inline-flex items-center space-x-2.5 px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-sm border border-aqua-200 shadow-sm mb-6">
+                    <span id="header-status-dot" class="w-2.5 h-2.5 rounded-full bg-sun-400 animate-pulse"></span>
+                    <span id="header-status-text" class="text-xs font-bold uppercase tracking-wider text-aqua-900">Warming Up Swim Model...</span>
+                </div>
+                
+                <h1 class="font-display text-4xl sm:text-6xl font-extrabold text-aqua-950 tracking-tight leading-tight mb-6">
+                    Dive Into Smart <span class="text-transparent bg-clip-text bg-gradient-to-r from-aqua-600 via-ocean-500 to-teal-500">Swimming Vision</span>
+                </h1>
+                
+                <p class="text-base sm:text-xl text-slate-700 max-w-2xl mx-auto leading-relaxed mb-9">
+                    Make a splash with real-time artificial intelligence! Powered by Teachable Machine and TensorFlow.js, AquaVision AI recognizes swimming visuals right in your browser—fast, joyful, and 100% private.
+                </p>
+
+                <div class="flex flex-wrap items-center justify-center gap-4">
+                    <a href="#classifier" class="px-7 py-4 rounded-2xl bg-gradient-to-r from-aqua-500 to-ocean-600 hover:from-aqua-600 hover:to-ocean-700 text-white font-bold text-sm sm:text-base shadow-lg shadow-aqua-600/30 transition-all transform hover:-translate-y-0.5 flex items-center space-x-2">
+                        <span>Jump Into Live Classifier</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                    </a>
+                    <a href="#community-impact" class="px-7 py-4 rounded-2xl bg-white/90 hover:bg-white text-aqua-900 font-bold text-sm sm:text-base border border-aqua-200 shadow-sm transition-all">
+                        Community Impact
+                    </a>
+                </div>
+            </div>
+
+            <!-- Smooth Layered SVG Water Waves at Bottom of Hero -->
+            <div class="absolute bottom-0 left-0 w-full overflow-hidden leading-none pointer-events-none">
+                <svg class="relative block w-[200%] h-14 sm:h-20 animate-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                    <path d="M0,40 C150,90 350,0 600,40 C850,80 1050,10 1200,40 L1200,120 L0,120 Z" fill="#a5f3fc" fill-opacity="0.45"></path>
+                    <path d="M0,65 C200,15 400,105 600,65 C800,25 1000,95 1200,65 L1200,120 L0,120 Z" fill="#f0fdfa"></path>
+                </svg>
+            </div>
+        </section>
+
+        <!-- Interactive AI Classifier Studio: Pool Deck Workspace -->
+        <section id="classifier" class="py-12 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mb-10 text-center sm:text-left flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div>
+                    <span class="text-xs font-extrabold uppercase tracking-widest text-aqua-600">Interactive Pool Deck</span>
+                    <h2 class="font-display text-2xl sm:text-4xl font-extrabold text-aqua-950 mt-1">Swimming Vision Studio</h2>
+                    <p class="text-slate-600 mt-1.5 text-sm sm:text-base">Test your swim visuals live with your camera or drop in a snapshot from poolside.</p>
+                </div>
+                <!-- Model ID Pill -->
+                <div class="inline-flex items-center space-x-2 text-xs text-aqua-900 bg-white px-4 py-2.5 rounded-2xl border border-aqua-200 shadow-sm self-center sm:self-auto">
+                    <span class="w-2 h-2 rounded-full bg-aqua-500"></span>
+                    <span class="font-semibold">Model ID:</span>
+                    <code class="font-mono font-bold text-ocean-600 bg-aqua-50 px-2 py-0.5 rounded-lg">rBqRBgx9F</code>
+                </div>
+            </div>
+
+            <!-- Inline Notification Banner -->
+            <div id="notification-banner" class="hidden mb-6 p-4 rounded-2xl border flex items-start space-x-3 transition-all" role="alert">
+                <div id="notification-icon" class="flex-shrink-0 mt-0.5"></div>
+                <div class="flex-1 text-sm">
+                    <h3 id="notification-title" class="font-bold"></h3>
+                    <p id="notification-message" class="mt-0.5 opacity-90"></p>
+                </div>
+                <button onclick="hideNotification()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg" aria-label="Close message">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Balanced 2-Column Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                <!-- LEFT COLUMN: Underwater Camera / Image Viewport (7 cols) -->
+                <div class="lg:col-span-7 bg-white rounded-3xl border border-aqua-200/80 shadow-xl shadow-aqua-900/5 overflow-hidden">
+                    
+                    <!-- Mode Switcher Tabs -->
+                    <div class="p-3.5 bg-gradient-to-r from-aqua-50 to-cyan-50 border-b border-aqua-100 flex items-center justify-between gap-2">
+                        <div class="grid grid-cols-2 gap-2 w-full sm:w-auto bg-aqua-200/50 p-1 rounded-2xl">
+                            <button id="tab-webcam" onclick="switchMode('webcam')" class="flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all bg-white text-ocean-700 shadow-sm">
+                                <svg class="w-4 h-4 text-aqua-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                <span>Live Webcam</span>
+                            </button>
+                            <button id="tab-upload" onclick="switchMode('upload')" class="flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all text-slate-600 hover:text-aqua-900">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <span>Upload Photo</span>
+                            </button>
+                        </div>
+
+                        <!-- Live Status Badge -->
+                        <div id="viewport-badge" class="hidden sm:flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white border border-aqua-200 text-aqua-800 text-xs font-bold shadow-sm">
+                            <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                            <span>Poolside Standby</span>
+                        </div>
+                    </div>
+
+                    <!-- Viewport Stage -->
+                    <div class="p-6 sm:p-8 flex flex-col items-center justify-center">
+                        
+                        <!-- WEBCAM CONTAINER -->
+                        <div id="webcam-section" class="w-full flex flex-col items-center">
+                            <div class="relative w-full max-w-md aspect-square bg-gradient-to-b from-ocean-900 to-aqua-950 pool-tiles rounded-3xl overflow-hidden shadow-inner border-4 border-aqua-100 flex items-center justify-center">
+                                <!-- Placeholder State before Camera Starts -->
+                                <div id="webcam-placeholder" class="text-center p-6 text-aqua-100 flex flex-col items-center">
+                                    <div class="relative w-20 h-20 rounded-3xl bg-aqua-500/20 border border-aqua-400/40 flex items-center justify-center mb-5 text-aqua-300">
+                                        <span class="absolute inset-0 rounded-3xl border-2 border-aqua-400/40 animate-ripple"></span>
+                                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    </div>
+                                    <p class="text-base font-display font-bold text-white">Ready to Dive In!</p>
+                                    <p class="text-xs text-aqua-200 mt-1.5 max-w-xs leading-relaxed">Click "Start Swim Camera" below to activate live browser detection.</p>
+                                </div>
+
+                                <!-- Teachable Machine Canvas Mount Point -->
+                                <div id="webcam-canvas-container" class="w-full h-full hidden [&>canvas]:w-full [&>canvas]:h-full [&>canvas]:object-cover"></div>
+                                
+                                <!-- Underwater Viewfinder Overlay -->
+                                <div id="scanner-overlay" class="hidden pointer-events-none absolute inset-4 border-2 border-aqua-300/40 rounded-2xl">
+                                    <div class="absolute top-0 left-0 w-5 h-5 border-t-4 border-l-4 border-aqua-300 rounded-tl-lg"></div>
+                                    <div class="absolute top-0 right-0 w-5 h-5 border-t-4 border-r-4 border-aqua-300 rounded-tr-lg"></div>
+                                    <div class="absolute bottom-0 left-0 w-5 h-5 border-b-4 border-l-4 border-aqua-300 rounded-bl-lg"></div>
+                                    <div class="absolute bottom-0 right-0 w-5 h-5 border-b-4 border-r-4 border-aqua-300 rounded-br-lg"></div>
+                                </div>
+                            </div>
+
+                            <!-- Camera Controls -->
+                            <div class="mt-6 flex flex-wrap items-center justify-center gap-3 w-full">
+                                <button id="btn-start-cam" onclick="startWebcam()" disabled class="flex items-center space-x-2 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-aqua-500 to-ocean-600 hover:from-aqua-600 hover:to-ocean-700 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm shadow-lg shadow-aqua-500/25 transition-all transform hover:-translate-y-0.5">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>Start Swim Camera</span>
+                                </button>
+                                <button id="btn-stop-cam" onclick="stopWebcam()" class="hidden items-center space-x-2 px-7 py-3.5 rounded-2xl bg-coral-500 hover:bg-coral-600 text-white font-bold text-sm shadow-lg shadow-coral-500/25 transition-all">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+                                    <span>Pause Camera</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- IMAGE UPLOAD CONTAINER -->
+                        <div id="upload-section" class="hidden w-full flex flex-col items-center">
+                            <label for="image-file-input" id="drop-zone" class="w-full max-w-md aspect-square rounded-3xl border-3 border-dashed border-aqua-300 hover:border-aqua-500 bg-aqua-50/40 hover:bg-aqua-50 transition-all cursor-pointer flex flex-col items-center justify-center p-6 text-center relative overflow-hidden group">
+                                
+                                <!-- Default Upload Prompt -->
+                                <div id="upload-prompt" class="flex flex-col items-center">
+                                    <div class="w-16 h-16 rounded-2xl bg-white shadow-md border border-aqua-100 flex items-center justify-center text-aqua-600 group-hover:scale-110 transition-transform mb-4">
+                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                                    </div>
+                                    <p class="text-base font-display font-bold text-aqua-950">Drop a swimming photo here</p>
+                                    <p class="text-xs text-slate-500 mt-1">or click to browse PNG, JPG, WEBP (100% local)</p>
+                                </div>
+
+                                <!-- Uploaded Image Preview -->
+                                <img id="uploaded-image-preview" alt="Uploaded swimming sample for classification" class="hidden w-full h-full object-contain rounded-2xl" />
+                                <input id="image-file-input" type="file" accept="image/*" class="sr-only" onchange="handleImageUpload(event)" />
+                            </label>
+
+                            <div class="mt-6 flex items-center justify-center gap-3">
+                                <button type="button" onclick="document.getElementById('image-file-input').click()" class="px-6 py-3 rounded-2xl bg-white hover:bg-aqua-50 text-aqua-900 font-bold text-sm border border-aqua-200 shadow-sm transition-all">
+                                    Choose Another Photo
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: Poolside Timing Board & Predictions (5 cols) -->
+                <div class="lg:col-span-5 flex flex-col gap-6">
+                    
+                    <!-- Top Prediction Highlight Card (Ocean Gradient Scoreboard) -->
+                    <div class="bg-gradient-to-br from-ocean-900 via-aqua-900 to-teal-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-ocean-900/15 relative overflow-hidden border border-aqua-700/50">
+                        <!-- Decorative Water Glow -->
+                        <div class="absolute -right-10 -top-10 w-40 h-40 bg-aqua-400/20 rounded-full blur-2xl pointer-events-none"></div>
+                        <div class="absolute -left-8 -bottom-8 w-32 h-32 bg-teal-400/15 rounded-full blur-2xl pointer-events-none"></div>
+                        
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="inline-flex items-center space-x-1.5 text-xs font-extrabold uppercase tracking-widest text-aqua-300">
+                                <span class="w-2 h-2 rounded-full bg-sun-400"></span>
+                                <span>Top Swim Match</span>
+                            </span>
+                            <span id="inference-time-badge" class="text-xs font-mono font-semibold text-aqua-100 bg-white/10 border border-white/10 px-3 py-1 rounded-full">Ready</span>
+                        </div>
+                        
+                        <div id="top-class-name" class="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-white truncate">
+                            Waiting for Splash...
+                        </div>
+                        
+                        <div class="mt-4 flex items-baseline space-x-2">
+                            <span id="top-class-confidence" class="font-display text-4xl sm:text-5xl font-extrabold text-aqua-300">0.0%</span>
+                            <span class="text-sm font-medium text-aqua-100/80">match confidence</span>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Class Probability Wave Bars Card -->
+                    <div class="bg-white rounded-3xl border border-aqua-200/80 p-6 sm:p-7 shadow-lg shadow-aqua-900/5">
+                        <div class="flex items-center justify-between mb-5">
+                            <h3 class="font-display font-extrabold text-aqua-950 text-lg">Lane Probabilities</h3>
+                            <span id="total-classes-count" class="text-xs font-bold text-aqua-800 bg-aqua-100 px-3 py-1 rounded-full">Loading lanes...</span>
+                        </div>
+
+                        <!-- Dynamic Bars Container -->
+                        <div id="predictions-container" class="space-y-4">
+                            <!-- Skeleton Loading Bars -->
+                            <div class="animate-pulse space-y-4">
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1.5">
+                                        <div class="h-4 bg-aqua-100 rounded w-28"></div>
+                                        <div class="h-4 bg-aqua-100 rounded w-12"></div>
+                                    </div>
+                                    <div class="w-full bg-aqua-50 rounded-full h-3.5"></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1.5">
+                                        <div class="h-4 bg-aqua-100 rounded w-36"></div>
+                                        <div class="h-4 bg-aqua-100 rounded w-12"></div>
+                                    </div>
+                                    <div class="w-full bg-aqua-50 rounded-full h-3.5"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Privacy Assurance Footer inside Card -->
+                        <div class="mt-6 pt-4 border-t border-aqua-100 flex items-center space-x-2.5 text-xs text-slate-600">
+                            <div class="w-6 h-6 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            </div>
+                            <span><strong>100% On-Device Privacy:</strong> Your camera feed and photos never leave your browser.</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- SIGNIFICANCE TO THE COMMUNITY SECTION -->
+        <section id="community-impact" class="relative py-16 sm:py-24 bg-gradient-to-b from-white via-aqua-50/60 to-cyan-100/50 border-t border-aqua-200/70">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <!-- Section Header -->
+                <div class="max-w-3xl mx-auto text-center mb-14">
+                    <span class="inline-block px-3.5 py-1 rounded-full bg-aqua-100 text-aqua-800 border border-aqua-200 text-xs font-extrabold uppercase tracking-wider mb-3">Community Impact</span>
+                    <h2 class="font-display text-3xl sm:text-4xl font-extrabold text-aqua-950 tracking-tight mb-4">
+                        Significance to the Swimming Community
+                    </h2>
+                    <p class="text-slate-600 text-base sm:text-lg leading-relaxed">
+                        AquaVision AI brings joyful, accessible computer vision to local pools, swim clubs, and beginner swimmers—helping everyone build confidence in the water without costly gear.
+                    </p>
+                </div>
+
+                <!-- 3-Column Community Pillars -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    
+                    <!-- Pillar 1: Youth & Beginner Swim Coaching -->
+                    <article class="bg-white rounded-3xl p-8 border border-aqua-200/80 shadow-lg shadow-aqua-900/5 hover:-translate-y-1 transition-all flex flex-col">
+                        <div class="w-13 h-13 w-12 h-12 rounded-2xl bg-gradient-to-br from-aqua-400 to-ocean-600 text-white flex items-center justify-center shadow-md shadow-aqua-500/25 mb-6">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <h3 class="font-display text-xl font-extrabold text-aqua-950 mb-3">Engaging Youth & Beginner Learning</h3>
+                        <p class="text-slate-600 text-sm leading-relaxed flex-grow">
+                            Learning to swim is even more exciting when technology feels interactive and encouraging. Swim instructors and youth programs can use AquaVision AI as a fun poolside visual aid to recognize strokes, equipment, or water activities in real time.
+                        </p>
+                        <div class="mt-6 pt-4 border-t border-aqua-100 text-xs font-bold text-ocean-700">
+                            Impact: Turns swim practice into interactive discovery
+                        </div>
+                    </article>
+
+                    <!-- Pillar 2: Grassroots Poolside Accessibility -->
+                    <article class="bg-white rounded-3xl p-8 border border-aqua-200/80 shadow-lg shadow-aqua-900/5 hover:-translate-y-1 transition-all flex flex-col">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-400 to-emerald-600 text-white flex items-center justify-center shadow-md shadow-teal-500/25 mb-6">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        </div>
+                        <h3 class="font-display text-xl font-extrabold text-aqua-950 mb-3">Zero-Cost Access for Local Clubs</h3>
+                        <p class="text-slate-600 text-sm leading-relaxed flex-grow">
+                            High-end sports analytics usually require expensive underwater rigs and paid subscriptions. Hosted freely on GitHub Pages, AquaVision AI runs on any everyday smartphone, tablet, or laptop so community pools can benefit immediately.
+                        </p>
+                        <div class="mt-6 pt-4 border-t border-aqua-100 text-xs font-bold text-teal-700">
+                            Impact: Removes financial & hardware barriers
+                        </div>
+                    </article>
+
+                    <!-- Pillar 3: Poolside Safety & Privacy First -->
+                    <article class="bg-white rounded-3xl p-8 border border-aqua-200/80 shadow-lg shadow-aqua-900/5 hover:-translate-y-1 transition-all flex flex-col">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sun-400 to-orange-500 text-white flex items-center justify-center shadow-md shadow-amber-500/25 mb-6">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        </div>
+                        <h3 class="font-display text-xl font-extrabold text-aqua-950 mb-3">Family-Safe On-Device Privacy</h3>
+                        <p class="text-slate-600 text-sm leading-relaxed flex-grow">
+                            Privacy around swimming pools is essential. Because TensorFlow.js runs the neural network strictly inside the user's local browser, zero video frames or photos are ever uploaded to external cloud servers.
+                        </p>
+                        <div class="mt-6 pt-4 border-t border-aqua-100 text-xs font-bold text-amber-700">
+                            Impact: Complete peace of mind for families & coaches
+                        </div>
+                    </article>
+
+                </div>
+
+                <!-- Cheerful Community Callout Banner -->
+                <div class="mt-12 rounded-3xl bg-gradient-to-r from-ocean-800 via-aqua-800 to-teal-800 p-7 sm:p-10 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="max-w-2xl">
+                        <span class="inline-block px-3 py-1 rounded-full bg-white/15 text-aqua-200 text-xs font-bold uppercase tracking-wider mb-2">Open-Source Aquatic Tech</span>
+                        <h4 class="font-display text-xl sm:text-2xl font-extrabold mb-2">Built to Inspire Swimmers & Student Builders</h4>
+                        <p class="text-sm sm:text-base text-aqua-100 leading-relaxed">
+                            Whether you're a swimmer testing your form, a coach running poolside demos, or a student exploring how AI sees the world, AquaVision AI is open for the entire community to use, remix, and share.
+                        </p>
+                    </div>
+                    <a href="#classifier" class="flex-shrink-0 px-7 py-3.5 rounded-2xl bg-sun-400 hover:bg-sun-500 text-aqua-950 font-extrabold text-sm shadow-lg transition-all transform hover:-translate-y-0.5">
+                        Try the Swim Classifier
+                    </a>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- How It Works / Aquatic Architecture Overview -->
+        <section id="pool-features" class="py-16 bg-white border-t border-aqua-100">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+                    <div>
+                        <span class="text-xs font-extrabold uppercase tracking-wider text-aqua-600">Smooth Sailing</span>
+                        <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-aqua-950 mt-1">Designed for Effortless Poolside Use</h2>
+                    </div>
+                    <p class="text-sm text-slate-600 max-w-md">Lightweight static web architecture engineered for instant loading on GitHub Pages.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div class="bg-aqua-50/60 p-5 rounded-2xl border border-aqua-200/70">
+                        <div class="text-ocean-700 font-display font-extrabold text-sm mb-1.5">01. Sunlit Visual Clarity</div>
+                        <p class="text-xs text-slate-600 leading-relaxed">High-contrast ocean telemetry and bright aqua accents stay crisp and easy to read even in bright daylight.</p>
+                    </div>
+                    <div class="bg-aqua-50/60 p-5 rounded-2xl border border-aqua-200/70">
+                        <div class="text-ocean-700 font-display font-extrabold text-sm mb-1.5">02. Dual Input Modes</div>
+                        <p class="text-xs text-slate-600 leading-relaxed">Switch smoothly between real-time webcam tracking and static photo uploads in one click.</p>
+                    </div>
+                    <div class="bg-aqua-50/60 p-5 rounded-2xl border border-aqua-200/70">
+                        <div class="text-ocean-700 font-display font-extrabold text-sm mb-1.5">03. Live Lane Meters</div>
+                        <p class="text-xs text-slate-600 leading-relaxed">Animated probability bars race forward in real time so confidence scores feel intuitive and fun.</p>
+                    </div>
+                    <div class="bg-aqua-50/60 p-5 rounded-2xl border border-aqua-200/70">
+                        <div class="text-ocean-700 font-display font-extrabold text-sm mb-1.5">04. Zero-Server Hosting</div>
+                        <p class="text-xs text-slate-600 leading-relaxed">Packaged into a single HTML file ready for instant deployment on GitHub Pages.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-aqua-950 text-aqua-200 py-8 border-t border-aqua-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+            <p class="font-medium">AquaVision AI • Powered by TensorFlow.js &amp; Google Teachable Machine</p>
+            <p class="text-aqua-400">100% Client-Side Inference • Safe &amp; Private for Everyone</p>
+        </div>
+    </footer>
+
+    <!-- Teachable Machine Interactive Script -->
+    <script>
+        const MODEL_URL = "https://teachablemachine.withgoogle.com/models/rBqRBgx9F/";
+        let model, webcam, maxPredictions;
+        let isWebcamRunning = false;
+        let animationFrameId = null;
+
+        async function initModel() {
+            const statusDot = document.getElementById('header-status-dot');
+            const statusText = document.getElementById('header-status-text');
+            const startBtn = document.getElementById('btn-start-cam');
+
+            try {
+                const modelURL = MODEL_URL + "model.json";
+                const metadataURL = MODEL_URL + "metadata.json";
+                model = await tmImage.load(modelURL, metadataURL);
+                maxPredictions = model.getTotalClasses();
+
+                statusDot.classList.remove('bg-sun-400');
+                statusDot.classList.add('bg-emerald-500');
+                statusText.textContent = "Pool Model Ready to Swim";
+                startBtn.disabled = false;
+
+                document.getElementById('total-classes-count').textContent = `${maxPredictions} Swim Lanes`;
+                renderEmptyBars(model.getClassLabels());
+            } catch (error) {
+                statusDot.classList.remove('bg-sun-400', 'animate-pulse');
+                statusDot.classList.add('bg-coral-500');
+                statusText.textContent = "Model Load Failed";
+                showNotification("Model Connection Issue", "Could not reach the Teachable Machine model. Please check your internet connection and refresh the page.", "error");
+            }
+        }
+
+        function renderEmptyBars(labels) {
+            const container = document.getElementById('predictions-container');
+            container.innerHTML = labels.map((label, idx) => `
+                <div>
+                    <div class="flex justify-between text-sm font-bold mb-1.5">
+                        <span class="text-aqua-950 truncate pr-2">${label}</span>
+                        <span id="prob-text-${idx}" class="font-mono text-ocean-600">0.0%</span>
+                    </div>
+                    <div class="w-full bg-aqua-100/80 rounded-full h-3.5 overflow-hidden p-0.5">
+                        <div id="prob-bar-${idx}" class="bg-gradient-to-r from-aqua-400 to-ocean-600 h-2.5 rounded-full transition-all duration-150" style="width: 0%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function startWebcam() {
+            if (!model || isWebcamRunning) return;
+            try {
+                const flip = true;
+                webcam = new tmImage.Webcam(400, 400, flip);
+                await webcam.setup();
+                await webcam.play();
+                isWebcamRunning = true;
+
+                const canvasContainer = document.getElementById('webcam-canvas-container');
+                canvasContainer.innerHTML = '';
+                canvasContainer.appendChild(webcam.canvas);
+                canvasContainer.classList.remove('hidden');
+
+                document.getElementById('webcam-placeholder').classList.add('hidden');
+                document.getElementById('scanner-overlay').classList.remove('hidden');
+                document.getElementById('btn-start-cam').classList.add('hidden');
+                document.getElementById('btn-stop-cam').classList.remove('hidden');
+                document.getElementById('btn-stop-cam').classList.add('flex');
+
+                updateViewportBadge("Live Pool Cam", "bg-emerald-500");
+                loop();
+            } catch (err) {
+                showNotification("Camera Permission Needed", "Please allow camera access in your browser settings or switch to the Upload Photo tab.", "error");
+            }
+        }
+
+        function stopWebcam() {
+            if (webcam && isWebcamRunning) {
+                webcam.stop();
+                isWebcamRunning = false;
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            }
+            document.getElementById('webcam-canvas-container').classList.add('hidden');
+            document.getElementById('webcam-placeholder').classList.remove('hidden');
+            document.getElementById('scanner-overlay').classList.add('hidden');
+            document.getElementById('btn-stop-cam').classList.add('hidden');
+            document.getElementById('btn-stop-cam').classList.remove('flex');
+            document.getElementById('btn-start-cam').classList.remove('hidden');
+            updateViewportBadge("Poolside Standby", "bg-slate-400");
+        }
+
+        async function loop() {
+            if (!isWebcamRunning) return;
+            webcam.update();
+            await predict(webcam.canvas);
+            animationFrameId = window.requestAnimationFrame(loop);
+        }
+
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !model) return;
+
+            const preview = document.getElementById('uploaded-image-preview');
+            const prompt = document.getElementById('upload-prompt');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.onload = async function() {
+                    prompt.classList.add('hidden');
+                    preview.classList.remove('hidden');
+                    updateViewportBadge("Photo Analyzed", "bg-aqua-500");
+                    await predict(preview);
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function predict(imageElement) {
+            const startTime = performance.now();
+            const predictions = await model.predict(imageElement);
+            const elapsed = Math.round(performance.now() - startTime);
+
+            document.getElementById('inference-time-badge').textContent = `${elapsed} ms`;
+
+            let topPred = predictions[0];
+            predictions.forEach((p, idx) => {
+                if (p.probability > topPred.probability) topPred = p;
+                const pct = (p.probability * 100).toFixed(1);
+                const textEl = document.getElementById(`prob-text-${idx}`);
+                const barEl = document.getElementById(`prob-bar-${idx}`);
+                if (textEl && barEl) {
+                    textEl.textContent = `${pct}%`;
+                    barEl.style.width = `${pct}%`;
+                }
+            });
+
+            document.getElementById('top-class-name').textContent = topPred.className;
+            document.getElementById('top-class-confidence').textContent = `${(topPred.probability * 100).toFixed(1)}%`;
+        }
+
+        function switchMode(mode) {
+            const tabWebcam = document.getElementById('tab-webcam');
+            const tabUpload = document.getElementById('tab-upload');
+            const webcamSec = document.getElementById('webcam-section');
+            const uploadSec = document.getElementById('upload-section');
+
+            if (mode === 'webcam') {
+                tabWebcam.className = "flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all bg-white text-ocean-700 shadow-sm";
+                tabUpload.className = "flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all text-slate-600 hover:text-aqua-900";
+                webcamSec.classList.remove('hidden');
+                uploadSec.classList.add('hidden');
+            } else {
+                stopWebcam();
+                tabUpload.className = "flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all bg-white text-ocean-700 shadow-sm";
+                tabWebcam.className = "flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all text-slate-600 hover:text-aqua-900";
+                uploadSec.classList.remove('hidden');
+                webcamSec.classList.add('hidden');
+                updateViewportBadge("Photo Upload Mode", "bg-aqua-500");
+            }
+        }
+
+        function updateViewportBadge(text, dotColorClass) {
+            const badge = document.getElementById('viewport-badge');
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full ${dotColorClass}"></span><span>${text}</span>`;
+        }
+
+        function showNotification(title, message, type) {
+            const banner = document.getElementById('notification-banner');
+            document.getElementById('notification-title').textContent = title;
+            document.getElementById('notification-message').textContent = message;
+            banner.className = `mb-6 p-4 rounded-2xl border flex items-start space-x-3 transition-all ${
+                type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-aqua-50 border-aqua-200 text-aqua-900'
+            }`;
+            banner.classList.remove('hidden');
+        }
+
+        function hideNotification() {
+            document.getElementById('notification-banner').classList.add('hidden');
+        }
+
+        // Drag and drop support for photo upload
+        const dropZone = document.getElementById('drop-zone');
+        if (dropZone) {
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-aqua-500', 'bg-aqua-100/50');
+            });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('border-aqua-500', 'bg-aqua-100/50');
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-aqua-500', 'bg-aqua-100/50');
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    const input = document.getElementById('image-file-input');
+                    input.files = e.dataTransfer.files;
+                    handleImageUpload({ target: input });
+                }
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', initModel);
+    </script>
+</body>
+</html>
